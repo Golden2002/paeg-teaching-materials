@@ -145,7 +145,11 @@ class VideoGenerator(Generator):
 
 
 class ManimGenerator(Generator):
-    """Manim 数学动画生成器：LLM 生成 Manim 代码（可选渲染 mp4）。"""
+    """Manim 数学动画生成器：LLM 生成 Manim 代码（可选渲染 mp4）。
+
+    §3.111 ⭐ 顶尖化：RITL 渲染错误回灌（错误 tail → 修复 → 重试 K 轮）
+    + safe_manim 12 崩溃模式 lint（生成后自动检测高危模式）。
+    """
 
     material_type = "manim"
 
@@ -157,20 +161,56 @@ class ManimGenerator(Generator):
                 system = ("你是 Manim 动画专家。为数学/物理概念生成 Manim 代码。"
                           "要求：import 完整、Scene 类含 construct、"
                           "渐进披露（TransformMatchingTex）、每动画≤5s、可渲染。"
+                          "注意：Create 只用于几何图形（Text 用 Write）；MathTex 不要 $；"
+                          "Brace.get_text 不要传 font_size；transform 用 ReplacementTransform。"
                           "只输出 Python 代码。")
                 user = f"主题：{topic}（{subject}）。"
                 code = llm(system, user, max_tokens=2000)
-                result = {
-                    "material_type": "manim", "topic": topic, "subject": subject,
-                    "ok": True, "output": code,
-                }
+
+                # §3.111 ⭐ safety lint（12 崩溃模式）
+                try:
+                    from ..manim_quality import lint_manim_code
+                    _lint = lint_manim_code(code)
+                except Exception:
+                    _lint = []
+
+                # §3.111 ⭐ RITL 渲染错误回灌（K=3 轮）
+                render_ok = False
+                render_info = {}
                 if kw.get("render", False):
                     try:
                         from ..adapters.manim_runtime import render_manim_code
-                        mp4 = render_manim_code(code, topic)
-                        result["mp4_path"] = mp4
+                        for _r in range(3):
+                            try:
+                                mp4 = render_manim_code(code, topic)
+                                render_ok = True
+                                render_info = {"mp4_path": mp4}
+                                break
+                            except Exception as _re:
+                                # RITL：错误反馈 → LLM 修复 → 重试
+                                try:
+                                    from ..manim_quality import build_ritl_prompt
+                                    _fix_sys = "你是 Manim 代码修复器。根据渲染错误修复代码。输出完整代码。"
+                                    _fix_usr = build_ritl_prompt(
+                                        "Manim 代码", code, str(_re)[:500], code=code)
+                                    _fixed = llm(_fix_sys, _fix_usr, max_tokens=2000)
+                                    if _fixed and "class " in _fixed:
+                                        code = _fixed
+                                        continue
+                                except Exception:
+                                    pass
+                                render_info["render_error"] = str(_re)[:200]
+                                break
                     except Exception as e:
-                        result["mp4_error"] = f"渲染失败: {str(e)[:100]}"
+                        render_info["render_skip"] = f"渲染环境不可用: {str(e)[:100]}"
+
+                result = {
+                    "material_type": "manim", "topic": topic, "subject": subject,
+                    "ok": True, "output": code,
+                    "lint_issues": _lint[:8],   # §3.111 safety lint 报告
+                }
+                if render_info:
+                    result.update(render_info)
                 return result
             return {
                 "material_type": "manim", "topic": topic, "subject": subject,
