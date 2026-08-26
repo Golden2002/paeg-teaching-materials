@@ -1,0 +1,13 @@
+{
+  "default_profile": "default",
+  "profiles": {
+    "default": {
+      "note": "统一使用注入的 LLM（MaterialRegistry.llm，与主项目同模型）——§3.111 R4"
+    },
+    "_example_coder": {
+      "provider": "qwen",
+      "model": "qwen3-coder-30b",
+      "note": "示例：未来接入 Manim 代码专用模型——配置加一条即可，不改代码（配置外置 ⭐）"
+    }
+  }
+}

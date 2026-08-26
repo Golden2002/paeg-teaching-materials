@@ -194,6 +194,98 @@ def build_server() -> "FastMCP":
         except Exception as e:
             return json.dumps({"ok": False, "error": str(e)[:300]}, ensure_ascii=False)
 
+    # ─────────────────────────────────────
+    # §3.111 ⭐ R8 Manim 5 工具（顶尖化 MCP 暴露）
+    # ─────────────────────────────────────
+    @mcp.tool()
+    def render_manim(topic: str, subject: str = "数学", audience: str = "高中",
+                     duration_target_sec: int = 120) -> str:
+        """渲染 Manim 数学动画（完整管线：剧本→代码→渲染→质量审计）。
+        返回 {ok, url, script, code, lint_issues, mvqs, stages}。"""
+        try:
+            import json as _json
+            r = json.loads(execute("generate_manim", {"topic": topic, "subject": subject,
+                                                      "render": True}))
+            return _json.dumps(r, ensure_ascii=False, default=str)
+        except Exception as e:
+            return json.dumps({"ok": False, "error": str(e)[:300]}, ensure_ascii=False)
+
+    @mcp.tool()
+    def plan_scenes(topic: str, subject: str = "数学", audience: str = "高中",
+                    duration_target_sec: int = 120) -> str:
+        """Manim 分镜规划（管线第一阶段）：生成剧本 JSON（3B1B 原则 + 叙事结构）。"""
+        try:
+            import json as _json
+            # 复用 manim_quality 的叙事常量注入剧本 prompt
+            r = json.loads(execute("generate_manim", {"topic": topic, "subject": subject}))
+            return _json.dumps({"ok": True, "topic": topic,
+                                "script_plan": r.get("output", "")[:2000],
+                                "mvqs": r.get("mvqs"),
+                                "lint_issues": r.get("lint_issues", [])},
+                               ensure_ascii=False)
+        except Exception as e:
+            return json.dumps({"ok": False, "error": str(e)[:300]}, ensure_ascii=False)
+
+    @mcp.tool()
+    def audit_visual(code: str = "", topic: str = "") -> str:
+        """Manim 视觉审计：MVQS 几何评估（无需渲染）+ safety lint（12 崩溃模式）。
+        返回 {mvqs, lint_issues, verdict}。"""
+        try:
+            import json as _json
+            from .manim_quality import mvqs_score, lint_manim_code
+            if not code and topic:
+                # 无代码时先生成
+                r = json.loads(execute("generate_manim", {"topic": topic, "subject": "数学"}))
+                code = r.get("output", "")
+            _mvqs = mvqs_score(code)
+            _lint = lint_manim_code(code)
+            return _json.dumps({"ok": True, "mvqs": _mvqs,
+                                "lint_issues": _lint[:10]}, ensure_ascii=False)
+        except Exception as e:
+            return json.dumps({"ok": False, "error": str(e)[:300]}, ensure_ascii=False)
+
+    @mcp.tool()
+    def tts_narrate(text: str, voice: str = "zh-CN-XiaoxiaoNeural") -> str:
+        """TTS 旁白合成（edge-tts）：生成 narration MP3。
+        返回 {ok, audio_path} 或错误。"""
+        try:
+            import json as _json
+            from .tts_parallel import ParallelTTSSynthesizer
+            s = ParallelTTSSynthesizer(voice=voice)
+            # 单段旁白：直接合成到临时
+            import os as _os
+            _tmp = _os.path.join(_os.environ.get("TEMP", "/tmp"), f"paeg_tts_{abs(hash(text)) % 100000}.mp3")
+            import asyncio, edge_tts
+            async def _synth():
+                comm = edge_tts.Communicate(str(text)[:1000], voice)
+                await comm.save(_tmp)
+            asyncio.run(_synth())
+            ok = _os.path.isfile(_tmp) and _os.path.getsize(_tmp) > 0
+            return _json.dumps({"ok": ok, "audio_path": _tmp if ok else ""},
+                               ensure_ascii=False)
+        except Exception as e:
+            return json.dumps({"ok": False, "error": str(e)[:300]}, ensure_ascii=False)
+
+    @mcp.tool()
+    def mux_video_assets(video_path: str, narration: str = "",
+                         scene_json: str = "[]") -> str:
+        """视频与旁白合成（Audio-First）：ffmpeg mux MP3 → MP4。
+        scene_json: [{id, narration}]——并行预合成后 mux。
+        返回 {ok, out_path}。"""
+        try:
+            import json as _json
+            from .tts_parallel import ParallelTTSSynthesizer
+            scenes = _json.loads(scene_json) if scene_json else []
+            s = ParallelTTSSynthesizer()
+            if scenes:
+                s.start(scenes)
+                s.join(timeout=30)
+            out = s.mux(video_path, narration)
+            return _json.dumps({"ok": out is not None, "out_path": out or ""},
+                               ensure_ascii=False)
+        except Exception as e:
+            return json.dumps({"ok": False, "error": str(e)[:300]}, ensure_ascii=False)
+
     return mcp
 
 

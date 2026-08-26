@@ -73,8 +73,70 @@ class TestRitl:
 
 
 # ─────────────────────────────────────
-# 3. 与 ManimGenerator 集成（safety lint 报告）
+# 4. R5 MVQS（几何评估，同步主项目）
 # ─────────────────────────────────────
+class TestMvqs:
+    def test_good_code_pass(self):
+        from paeg_teaching_materials.manim_quality import mvqs_score
+        good = '''
+class Demo(Scene):
+    def construct(self):
+        c = Circle().move_to(LEFT)
+        s = Square().next_to(c, RIGHT)
+        self.play(Create(c), Create(s))
+'''
+        r = mvqs_score(good)
+        assert r["verdict"] == "PASS"
+        assert r["mvqs"] >= 0.6
+
+    def test_bad_code_warn(self):
+        from paeg_teaching_materials.manim_quality import mvqs_score
+        bad = '''
+class Demo(Scene):
+    def construct(self):
+        a = Circle()
+        b = Square()
+        c = Text("x")
+        self.add(a, b, c)
+'''
+        r = mvqs_score(bad)
+        assert r["verdict"] in ("WARN", "FAIL")
+        assert len(r["issues"]) >= 1
+
+    def test_build_mvqs_feedback(self):
+        from paeg_teaching_materials.manim_quality import build_mvqs_feedback
+        bad = '''
+class Demo(Scene):
+    def construct(self):
+        a = Circle()
+        b = Square()
+        self.add(a, b)
+'''
+        fb = build_mvqs_feedback(bad)
+        assert "MVQS 几何评估" in fb
+
+
+# ─────────────────────────────────────
+# 5. 与 ManimGenerator 集成（MVQS 报告）
+# ─────────────────────────────────────
+class TestManimGeneratorMvqs:
+    def setup_method(self):
+        from paeg_teaching_materials import MaterialRegistry
+        MaterialRegistry.reset()
+
+    def test_generate_includes_mvqs(self):
+        from paeg_teaching_materials import MaterialRegistry
+        from paeg_teaching_materials.generators import ManimGenerator
+
+        def mock_llm(system, user, max_tokens=2000, temperature=0.7):
+            return "class Demo(Scene):\n    def construct(self):\n        c = Circle().move_to(LEFT)\n        s = Square().next_to(c, RIGHT)\n        self.play(Create(c), Create(s))"
+
+        MaterialRegistry.inject(llm=mock_llm)
+        gen = ManimGenerator()
+        r = gen.generate("导数", "数学")
+        assert r.get("ok") is True
+        assert "mvqs" in r
+        assert r["mvqs"]["verdict"] == "PASS"
 class TestManimGeneratorEnhanced:
     def setup_method(self):
         from paeg_teaching_materials import MaterialRegistry
