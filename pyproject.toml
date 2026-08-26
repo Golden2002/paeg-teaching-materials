@@ -22,8 +22,13 @@ dev = ["pytest>=7"]
 [project.scripts]
 paeg-teaching-materials-mcp = "paeg_teaching_materials.mcp_server:main"
 
+# §3.114 ⭐ src 布局 + 自动发现（pip install 成功 + 子包完整：core/generators/quality/adapters/io）
 [tool.setuptools]
-packages = ["paeg_teaching_materials"]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["paeg_teaching_materials*"]
 
 [tool.setuptools.package-data]
 paeg_teaching_materials = ["data/*.json", "prompts/*.py"]
