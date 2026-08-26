@@ -138,6 +138,62 @@ def build_server() -> "FastMCP":
         from .quality.checks import apply_language_l0
         return apply_language_l0(text)
 
+    # ─────────────────────────────────────
+    # ⭐ 网状联通（Oracle §3.110）：独立调用 / 组合编排 / 依赖自省
+    # ─────────────────────────────────────
+    @mcp.tool()
+    def execute_tool(tool_name: str, topic: str = "", subject: str = "通用",
+                     learner_id: str = "anon", inputs_json: str = "{}") -> str:
+        """独立执行单个功能节点（网状联通：每个功能可独立使用）。
+        如 execute_tool("research") / execute_tool("outline") / execute_tool("ppt")。
+        返回 JSON 字符串。"""
+        try:
+            import asyncio
+            from .core import MaterialContext
+            ctx = MaterialContext(topic=topic or None, subject=subject, learner_id=learner_id)
+            import json as _json
+            inputs = _json.loads(inputs_json) if inputs_json else {"topic": topic}
+            result = asyncio.run(MaterialRegistry.execute_tool(tool_name, ctx, inputs))
+            return _json.dumps({"ok": True, "tool": tool_name, "result": result,
+                                "ctx": ctx.to_dict()}, ensure_ascii=False, default=str)
+        except Exception as e:
+            return json.dumps({"ok": False, "error": str(e)[:300]}, ensure_ascii=False)
+
+    @mcp.tool()
+    def execute_pipeline(target: str, topic: str = "", subject: str = "通用",
+                         learner_id: str = "anon") -> str:
+        """网状编排：按依赖图自动展开 target 的前置环节并执行。
+        如 execute_pipeline("ppt") 自动先查资料→大纲→PPT。
+        返回最终产物 + 已执行阶段。"""
+        try:
+            import json as _json
+            from .core import MaterialContext
+            ctx = MaterialContext(topic=topic or None, subject=subject, learner_id=learner_id)
+            result = MaterialRegistry.execute_plan(target, ctx, {"topic": topic})
+            return _json.dumps({"ok": True, "target": target, "result": result,
+                                "completed_stages": sorted(ctx.completed_stages),
+                                "ctx": ctx.to_dict()}, ensure_ascii=False, default=str)
+        except Exception as e:
+            return json.dumps({"ok": False, "error": str(e)[:300]}, ensure_ascii=False)
+
+    @mcp.tool()
+    def list_dependencies(target: str = "", format: str = "json") -> str:
+        """网状联通自省：展示功能依赖图（谁是谁的前置环节）。
+        format ∈ {json, ascii}；target 为空输出全网，否则输出该节点子树。"""
+        try:
+            import json as _json
+            resolver = MaterialRegistry.get_resolver()
+            graph = resolver.dependency_graph()
+            if format == "ascii":
+                lines = []
+                for name, meta in graph.items():
+                    reqs = ", ".join(f"{d['source']}({d['mode']})" for d in meta["requires"]) or "无前置"
+                    lines.append(f"{name} 产出[{meta['produces']}] 前置[{reqs}]")
+                return "\n".join(lines)
+            return _json.dumps({"ok": True, "graph": graph}, ensure_ascii=False)
+        except Exception as e:
+            return json.dumps({"ok": False, "error": str(e)[:300]}, ensure_ascii=False)
+
     return mcp
 
 
