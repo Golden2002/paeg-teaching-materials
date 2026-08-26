@@ -2,7 +2,7 @@
 
 [![Python](https://img.shields.io/badge/Python-3.9%2B-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-41%2F41-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-74%2F74-brightgreen.svg)](tests/)
 
 <p align="center">
   <strong>paeg-teaching-materials</strong> — 教学物料制作插件：PPT / 讲义 / 讲稿 / 思维导图 / 教学视频 / Manim 数学动画
@@ -155,6 +155,28 @@ python -m paeg_teaching_materials.mcp_server
 | `execute_pipeline` | 网状：自动编排前置环节 |
 | `list_dependencies` | 网状：功能依赖图自省 |
 
+## 可及性（像 Python 库一样 · §3.114）
+
+任何项目/智能体想用本插件，**只需 pip install 一个包**：
+
+```bash
+pip install paeg-teaching-materials          # 安装
+pip install "paeg-teaching-materials[mcp]"   # 含 MCP server
+```
+
+安装后 **import 即自动注册**（6 物料类型 + 规则自动加载），注入自己的 LLM 立即可用：
+
+```python
+import paeg_teaching_materials                # import 自动注册
+from paeg_teaching_materials import MaterialRegistry, execute
+MaterialRegistry.inject(llm=my_llm)           # 注入自己的 LLM
+result = execute("generate_handout", {"topic": "力学", "subject": "物理"})
+```
+
+- 零宿主依赖（核心 stdlib）
+- 干净 venv 实测：pip install → import → 注入 LLM → 立即可用
+- MCP server 入口：`paeg-teaching-materials-mcp`（console_scripts）
+
 ## 外部项目接入指南
 
 ### 场景 A：只用统一执行入口（推荐）
@@ -208,7 +230,7 @@ pip install + MCP 配置声明（见上）——任何 MCP 客户端（Claude/Op
 - **统一契约**：execute 返回 JSON 字符串（MCP 契约），失败不抛异常
 - **弱模式**：无宿主可跑通（Null 生成器占位），便于测试与演示
 - **语言规范联动**：物料产出自动过 L0 病句修正
-- **41 项测试**：公共 API/弱模式/注入/execute/质量/MCP 全覆盖
+- **74 项测试**：公共 API/弱模式/注入/execute/质量/MCP 全覆盖
 
 ## 架构
 
