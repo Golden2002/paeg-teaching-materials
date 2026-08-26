@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "paeg-teaching-materials"
+version = "0.1.0"
+description = "PAEG 教学物料制作插件：PPT/讲义/讲稿/思维导图/教学视频/Manim 数学动画生成（可拆卸、可独立、可 MCP server 直接安装、可接入任何智能体）"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "PAEG Team" }]
+keywords = ["education", "teaching", "materials", "pptx", "manim", "mindmap", "mcp"]
+
+[project.optional-dependencies]
+manim = ["manim>=0.18"]
+pptx = ["python-pptx>=0.6"]
+mcp = ["fastmcp>=2"]
+flask = ["flask>=2"]
+dev = ["pytest>=7"]
+
+[project.scripts]
+paeg-teaching-materials-mcp = "paeg_teaching_materials.mcp_server:main"
+
+[tool.setuptools]
+packages = ["paeg_teaching_materials"]
+
+[tool.setuptools.package-data]
+paeg_teaching_materials = ["data/*.json", "prompts/*.py"]
