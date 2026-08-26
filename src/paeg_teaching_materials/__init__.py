@@ -34,10 +34,21 @@ from .protocols import (
 from .quality.checks import check_material_structure, apply_language_l0
 from .quality.judge import judge_material
 
+# ⭐ 网状联通（Oracle §3.110）
+from .core import (
+    Tool, MaterialContext, Dependency,
+    broadcast, directed, optional,
+    Pipeline, Resolver, ExecutionPlan, ExecutionStep,
+)
+
 __version__ = "0.1.0"
 
 # 导入时注册默认生成器（弱模式可跑通）
 register_defaults()
+
+# ⭐ 网状联通：注册功能节点（Research/Outline/PPT/讲义/讲稿/视频/思维导图/Manim/方法/计划）
+from .tools import register_mesh_tools
+register_mesh_tools()
 
 __all__ = [
     # 核心 API
@@ -51,6 +62,10 @@ __all__ = [
     "NullLLM", "NullRefiner", "NullResourceProvider",
     # 质量
     "check_material_structure", "apply_language_l0", "judge_material",
+    # ⭐ 网状联通（Tool 节点 + Context + 边 + Pipeline + Resolver）
+    "Tool", "MaterialContext", "Dependency",
+    "broadcast", "directed", "optional",
+    "Pipeline", "Resolver", "ExecutionPlan", "ExecutionStep",
     # 元信息
     "__version__",
 ]
