@@ -2,7 +2,7 @@
 
 [![Python](https://img.shields.io/badge/Python-3.9%2B-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-22%2F22-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-41%2F41-brightgreen.svg)](tests/)
 
 <p align="center">
   <strong>paeg-teaching-materials</strong> — 教学物料制作插件：PPT / 讲义 / 讲稿 / 思维导图 / 教学视频 / Manim 数学动画
@@ -31,12 +31,53 @@
 
 ## 核心特性
 
+- **网状联通架构**（顶尖工具标准 ⭐）：10 个功能节点（查资料/大纲/PPT/讲义/讲稿/思维导图/视频/Manim/学习方法/学习计划）——每个既可独立使用，也是其他功能的前置环节
 - **可扩充生成器注册表**：`MaterialRegistry.register("自定义类型", generator)` 即扩展
 - **零宿主依赖**：6 个 Protocol 抽象（LLMCallable/RefinerProtocol/HandoutGenerator/ScriptGenerator/MindmapGenerator/ResourceProvider）+ Null 弱模式
 - **统一执行入口**：`execute(name, args)` 对标 constraint_engine（JSON 契约，绝不抛异常）
-- **MCP server 直接安装**：`pip install` + MCP 配置声明即接入（12 工具）
+- **MCP server 直接安装**：`pip install` + MCP 配置声明即接入（15 工具）
 - **语言规范联动**：物料产出自动过 L0 病句修正（复用 paeg-lang-style）
 - **质量检查 + 评审**：确定性结构检查 + LLM 5 维评分
+
+## 网状联通架构（功能既可独立，也是前置环节 ⭐）
+
+工具内部是**交织的网状接线与联通**——每个功能是一等公民节点：
+
+```
+research（查资料·广播前置）
+   ├──→ outline（大纲）──→ ppt（PPT 制作）
+   ├──→ script（讲稿）──→ video（教学视频）
+   ├──→ handout / manim / method / study_plan / mindmap(可选)
+```
+
+**三模式依赖边**：
+| 边类型 | 语义 | 例子 |
+|---|---|---|
+| broadcast（广播） | 源产物被全网消费 | 查资料 → 一切生成 |
+| directed（定向） | 强前置 | 大纲→PPT、讲稿→视频 |
+| optional（可选） | 缺失时降级 | 资料→思维导图 |
+
+**双暴露**：每个功能既是独立 MCP 工具（`execute_tool`），又可自动编排
+（`execute_pipeline` 按依赖图展开前置环节），也可 `|` 链式组合：
+
+```python
+from paeg_teaching_materials import MaterialRegistry
+from paeg_teaching_materials.tools import ResearchTool, OutlineTool, PptTool
+
+# 1. 独立调用
+result = MaterialRegistry.execute_plan("ppt", ctx, {"topic": "导数"})
+#   自动执行: research → outline → ppt（查资料是前置环节）
+
+# 2. 链式组合（LangChain Runnable 模式）
+pipeline = ResearchTool() | OutlineTool() | PptTool()  # 组合结果仍是 Tool
+
+# 3. 依赖图自省（MCP: list_dependencies）
+graph = MaterialRegistry.get_resolver().dependency_graph()
+```
+
+**中间产物**（MaterialContext 类型化 Blackboard）：
+`resources`（查资料·append 累积）/ `outline` / `lecture_script` / `ppt_outline` /
+`completed_stages`（阶段标记·union）——前置环节产物被下游自动消费。
 
 ## 安装
 
@@ -94,7 +135,7 @@ python -m paeg_teaching_materials.mcp_server
 }
 ```
 
-**暴露的 MCP 工具（12 个）**：
+**暴露的 MCP 工具（15 个）**：
 
 | 工具名 | 功能 |
 |---|---|
@@ -110,6 +151,9 @@ python -m paeg_teaching_materials.mcp_server
 | `build_material_prompt` | 物料提示词拼装 |
 | `check_language` | 语言规范检查 |
 | `normalize_material` | 语言规范守门 |
+| `execute_tool` | 网状：独立执行功能节点 |
+| `execute_pipeline` | 网状：自动编排前置环节 |
+| `list_dependencies` | 网状：功能依赖图自省 |
 
 ## 外部项目接入指南
 
@@ -164,7 +208,7 @@ pip install + MCP 配置声明（见上）——任何 MCP 客户端（Claude/Op
 - **统一契约**：execute 返回 JSON 字符串（MCP 契约），失败不抛异常
 - **弱模式**：无宿主可跑通（Null 生成器占位），便于测试与演示
 - **语言规范联动**：物料产出自动过 L0 病句修正
-- **22 项测试**：公共 API/弱模式/注入/execute/质量/MCP 全覆盖
+- **41 项测试**：公共 API/弱模式/注入/execute/质量/MCP 全覆盖
 
 ## 架构
 
@@ -184,7 +228,7 @@ paeg_teaching_materials（独立插件）
             v                      v
   +-----------------------------------------------------------+
   | executor.py（execute 统一入口，JSON 契约）                   |
-  | mcp_server.py（FastMCP 12 工具，stdio 直接安装）            |
+  | mcp_server.py（FastMCP 15 工具，stdio 直接安装）            |
   +-----------------------------------------------------------+
 ```
 
