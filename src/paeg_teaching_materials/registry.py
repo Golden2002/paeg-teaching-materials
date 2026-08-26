@@ -23,7 +23,6 @@ from .protocols import (
     DEFAULT_LLM, DEFAULT_REFINER, DEFAULT_HANDOUT, DEFAULT_SCRIPT,
     DEFAULT_MINDMAP, DEFAULT_RESOURCES,
 )
-
 # 内置物料类型
 MATERIAL_TYPES = ("ppt", "handout", "script", "video", "mindmap", "manim")
 
@@ -35,6 +34,9 @@ class MaterialRegistry:
     _generators: Dict[str, Any] = {}
     _pipelines: Dict[str, Any] = {}
     _extra_types: set = set()
+
+    # ⭐ 网状联通（Oracle §3.110）：Tool 节点注册表
+    _tools: Dict[str, Any] = {}
 
     # 宿主依赖（类级，inject 注入）
     llm: LLMCallable = DEFAULT_LLM
@@ -168,3 +170,64 @@ class MaterialRegistry:
             "ok": False,
             "output": f"（物料类型 '{material_type}' 未注册生成器——需注入宿主实现或注册生成器）",
         }
+
+    # ─────────────────────────────────────
+    # ⭐ 网状联通（Oracle §3.110）：Tool 节点注册 + 执行 + Resolver
+    # ─────────────────────────────────────
+    @classmethod
+    def register_tool(cls, tool) -> bool:
+        """注册 Tool 节点（一等公民，可独立调用/组合/作前置环节）。"""
+        cls._tools[tool.name] = tool
+        return True
+
+    @classmethod
+    def unregister_tool(cls, tool_name: str) -> bool:
+        cls._tools.pop(tool_name, None)
+        return True
+
+    @classmethod
+    def get_tool(cls, tool_name: str):
+        return cls._tools.get(tool_name)
+
+    @classmethod
+    def available_tools(cls) -> list:
+        return sorted(cls._tools.keys())
+
+    @classmethod
+    async def execute_tool(cls, tool_name: str, ctx=None, inputs=None):
+        """执行单个 Tool 节点（独立调用模式）。"""
+        tool = cls._tools.get(tool_name)
+        if tool is None:
+            raise ValueError(f"未知 Tool: {tool_name}（可用: {cls.available_tools()}）")
+        if ctx is None:
+            from .core import MaterialContext
+            ctx = MaterialContext()
+        result = await tool(ctx, inputs)
+        ctx.mark_completed(tool_name)
+        if tool.produces and ctx.get_field(tool.produces) is None:
+            ctx.set_field(tool.produces, result)
+        return result
+
+    @classmethod
+    def get_resolver(cls):
+        """构建依赖解析器（全网依赖图）。"""
+        from .core import Resolver
+        return Resolver(dict(cls._tools))
+
+    @classmethod
+    def execute_plan(cls, target: str, ctx=None, inputs=None):
+        """按依赖图自动展开并执行（网状编排模式）。"""
+        import asyncio
+        resolver = cls.get_resolver()
+        plan = resolver.build_plan(target, ctx)
+        if ctx is None:
+            from .core import MaterialContext
+            ctx = MaterialContext()
+        # 顺序执行计划（依赖已在拓扑序中）
+        last = inputs
+        for step in plan.steps:
+            last = asyncio.run(step.tool(ctx, last))
+            ctx.mark_completed(step.tool.name)
+            if step.tool.produces and ctx.get_field(step.tool.produces) is None:
+                ctx.set_field(step.tool.produces, last)
+        return last
