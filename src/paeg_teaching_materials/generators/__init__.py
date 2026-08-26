@@ -158,12 +158,20 @@ class ManimGenerator(Generator):
         llm = MaterialRegistry.llm
         try:
             if hasattr(llm, "__call__") and type(llm).__name__ != "NullLLM":
-                system = ("你是 Manim 动画专家。为数学/物理概念生成 Manim 代码。"
-                          "要求：import 完整、Scene 类含 construct、"
-                          "渐进披露（TransformMatchingTex）、每动画≤5s、可渲染。"
-                          "注意：Create 只用于几何图形（Text 用 Write）；MathTex 不要 $；"
-                          "Brace.get_text 不要传 font_size；transform 用 ReplacementTransform。"
-                          "只输出 Python 代码。")
+                # §3.111 ⭐ R7 叙事质量（同步主项目 manim_narrative 增强）
+                try:
+                    from ..manim_quality import VISUAL_PRINCIPLES_17, NARRATIVE_ARC_PROMPT
+                    _vp, _na = VISUAL_PRINCIPLES_17, NARRATIVE_ARC_PROMPT
+                except Exception:
+                    _vp, _na = "", ""
+                system = ("你是 Manim 动画专家。为数学/物理概念生成 Manim 代码。\n"
+                          "要求：import 完整、Scene 类含 construct、\n"
+                          "渐进披露（TransformMatchingTex）、每动画≤5s、可渲染。\n"
+                          "注意：Create 只用于几何图形（Text 用 Write）；MathTex 不要 $；\n"
+                          "Brace.get_text 不要传 font_size；transform 用 ReplacementTransform。\n"
+                          + (_vp + "\n" if _vp else "")
+                          + (_na + "\n" if _na else "")
+                          + "只输出 Python 代码。")
                 user = f"主题：{topic}（{subject}）。"
                 code = llm(system, user, max_tokens=2000)
 
@@ -173,6 +181,13 @@ class ManimGenerator(Generator):
                     _lint = lint_manim_code(code)
                 except Exception:
                     _lint = []
+
+                # §3.111 ⭐ R5 MVQS 几何评估（代码级，无需渲染）
+                try:
+                    from ..manim_quality import mvqs_score
+                    _mvqs = mvqs_score(code)
+                except Exception:
+                    _mvqs = None
 
                 # §3.111 ⭐ RITL 渲染错误回灌（K=3 轮）
                 render_ok = False
@@ -187,12 +202,11 @@ class ManimGenerator(Generator):
                                 render_info = {"mp4_path": mp4}
                                 break
                             except Exception as _re:
-                                # RITL：错误反馈 → LLM 修复 → 重试
+                                # RITL-DOC：错误 + API 签名注入 → LLM 修复 → 重试
                                 try:
-                                    from ..manim_quality import build_ritl_prompt
+                                    from ..manim_quality import build_ritl_doc_block
                                     _fix_sys = "你是 Manim 代码修复器。根据渲染错误修复代码。输出完整代码。"
-                                    _fix_usr = build_ritl_prompt(
-                                        "Manim 代码", code, str(_re)[:500], code=code)
+                                    _fix_usr = build_ritl_doc_block(code, str(_re)[:500])
                                     _fixed = llm(_fix_sys, _fix_usr, max_tokens=2000)
                                     if _fixed and "class " in _fixed:
                                         code = _fixed
@@ -208,6 +222,7 @@ class ManimGenerator(Generator):
                     "material_type": "manim", "topic": topic, "subject": subject,
                     "ok": True, "output": code,
                     "lint_issues": _lint[:8],   # §3.111 safety lint 报告
+                    "mvqs": _mvqs,              # §3.111 R5 MVQS 几何评估
                 }
                 if render_info:
                     result.update(render_info)
