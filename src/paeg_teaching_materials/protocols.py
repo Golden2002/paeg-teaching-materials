@@ -140,15 +140,29 @@ class ResourceProvider(Protocol):
     def search(self, query: str, k: int = 5) -> List[Dict[str, Any]]:
         ...
 
+    def collect_research_block(self, topic: str, subject: str, *,
+                                learner_id: str = "anon", llm=None,
+                                include_web: bool = False) -> Dict[str, Any]:
+        """查资料 4 路结构（网状联通前置环节 ⭐）。
+        返回 {user_assets, kb_hits, facts, web_hits, has_any, block}。
+        """
+        ...
+
 
 class NullResourceProvider:
-    """Null 实现：无资源（返回空列表）。"""
+    """Null 实现：无资源（返回空列表/空块）。"""
 
     def collect_all_resources(self, topic: str, subject: str) -> List[Dict[str, Any]]:
         return []
 
     def search(self, query: str, k: int = 5) -> List[Dict[str, Any]]:
         return []
+
+    def collect_research_block(self, topic: str, subject: str, *,
+                                learner_id: str = "anon", llm=None,
+                                include_web: bool = False) -> Dict[str, Any]:
+        return {"user_assets": "", "kb_hits": "", "facts": "", "web_hits": "",
+                "has_any": False, "block": ""}
 
 
 # ─────────────────────────────────────
