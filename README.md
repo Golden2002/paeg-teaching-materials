@@ -289,3 +289,15 @@ python -m pytest tests/ -q
 ## 许可证
 
 MIT © 2026 PAEG Team
+
+## 参考文献
+
+本项目的能力设计参考了以下资源：
+
+| 参考 | 网址 | 参考内容 |
+|---|---|---|
+| **Manim Community** | https://github.com/ManimCommunity/manim | 数学动画渲染引擎 |
+| **3Blue1Brown** | https://github.com/3b1b | 数学动画视觉风格（MVQS 评估基准） |
+| **Anthropic Skills 规范** | https://github.com/anthropics/skills | Agent Skills 标准格式（SKILL.md） |
+| **MCP（Model Context Protocol）** | https://modelcontextprotocol.io | MCP server 标准化接入 |
+| **PAEG 主项目** | https://github.com/Golden2002/PAEG | 教学物料制作体系（§3.91 网状联通架构来源） |
