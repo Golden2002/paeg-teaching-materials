@@ -19,7 +19,7 @@ import pytest
 import paeg_teaching_materials as ptm
 from paeg_teaching_materials import (
     MaterialRegistry, execute, MATERIAL_TYPES,
-    check_material_structure, judge_material,
+    check_material_structure, judge_material, NullLLM,
 )
 
 
@@ -50,6 +50,7 @@ class TestPublicAPI:
 class TestWeakMode:
     def setup_method(self):
         MaterialRegistry.reset()
+        MaterialRegistry.llm = NullLLM()  # 强制弱模式（默认已是环境变量 LLM）
 
     def test_handout_weak(self):
         r = MaterialRegistry.generate("handout", "一元二次方程", "数学")
@@ -96,7 +97,7 @@ class TestInjection:
     def test_reset(self):
         MaterialRegistry.inject(llm=lambda s, u, **k: "x")
         MaterialRegistry.reset()
-        assert type(MaterialRegistry.llm).__name__ == "NullLLM"
+        assert type(MaterialRegistry.llm).__name__ == "EnvLLM"  # 默认环境变量 LLM
 
 
 # ─────────────────────────────────────
@@ -135,6 +136,10 @@ class TestExecute:
 # 5. 质量检查与评审
 # ─────────────────────────────────────
 class TestQuality:
+    def setup_method(self):
+        MaterialRegistry.reset()
+        MaterialRegistry.llm = NullLLM()  # 评审走确定性启发式（避免真实 LLM 非确定性）
+
     def test_check_structure_placeholder(self):
         issues = check_material_structure("这是内容（待生成）", "handout")
         assert any("占位" in i for i in issues)

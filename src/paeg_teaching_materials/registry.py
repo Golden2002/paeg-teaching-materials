@@ -23,6 +23,7 @@ from .protocols import (
     DEFAULT_LLM, DEFAULT_REFINER, DEFAULT_HANDOUT, DEFAULT_SCRIPT,
     DEFAULT_MINDMAP, DEFAULT_RESOURCES,
 )
+from .llm_client import EnvLLM
 # 内置物料类型
 MATERIAL_TYPES = ("ppt", "handout", "script", "video", "mindmap", "manim")
 
@@ -38,8 +39,8 @@ class MaterialRegistry:
     # ⭐ 网状联通（Oracle §3.110）：Tool 节点注册表
     _tools: Dict[str, Any] = {}
 
-    # 宿主依赖（类级，inject 注入）
-    llm: LLMCallable = DEFAULT_LLM
+    # 宿主依赖（类级，inject 注入）：默认用环境变量 DeepSeek（独立接入 LLM ⭐），宿主可覆盖
+    llm: LLMCallable = EnvLLM()
     refiner: RefinerProtocol = DEFAULT_REFINER
     handout_gen: HandoutGenerator = DEFAULT_HANDOUT
     script_gen: ScriptGenerator = DEFAULT_SCRIPT
@@ -70,8 +71,8 @@ class MaterialRegistry:
 
     @classmethod
     def reset(cls) -> None:
-        """重置为 Null 依赖（保留默认生成器——弱模式可跑通）。"""
-        cls.llm = DEFAULT_LLM
+        """重置为默认依赖（保留默认生成器——弱模式可跑通；LLM 回到环境变量 DeepSeek）。"""
+        cls.llm = EnvLLM()
         cls.refiner = DEFAULT_REFINER
         cls.handout_gen = DEFAULT_HANDOUT
         cls.script_gen = DEFAULT_SCRIPT

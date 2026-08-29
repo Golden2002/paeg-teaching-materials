@@ -1,0 +1,55 @@
+{
+  "llm_available": true,
+  "topic": "一元二次方程",
+  "subject": "数学",
+  "materials": [
+    {
+      "material_type": "ppt",
+      "ok": true,
+      "output_len": 805,
+      "l0_changed": false,
+      "error": "",
+      "head": "## 封面：一元二次方程\\n\\n- 主讲：数学组\\n- 适用：初中九年级\\n- 核心：解法与应用\\n- 课时：两课时\\n\\n## 定义与一般形式\\n\\n- 定义：含一个未知数\\n-"
+    },
+    {
+      "material_type": "handout",
+      "ok": true,
+      "output_len": 3447,
+      "l0_changed": false,
+      "error": "",
+      "head": "## 一元二次方程 讲义\\n\\n## 教学目标\\n\\n1. **知识与技能**：学生能够准确地识别一元二次方程的标准形式 \\( ax^2 + bx + c = 0 \\)"
+    },
+    {
+      "material_type": "script",
+      "ok": true,
+      "output_len": 2724,
+      "l0_changed": false,
+      "error": "",
+      "head": "## 开场导入\\n\\n各位同学，大家好！欢迎来到今天的数学课堂。在开始之前，我想先请大家思考一个非常生活化的问题。假设我们有一块长方形的空地，它的长比宽多三米，而这"
+    },
+    {
+      "material_type": "video",
+      "ok": true,
+      "output_len": 1171,
+      "l0_changed": false,
+      "error": "",
+      "head": "[\\n  {\\n    \"scene\": 1,\\n    \"duration\": 10,\\n    \"visual\": \"开场黑屏，中央出现一个巨大的问号，问号逐渐分裂"
+    },
+    {
+      "material_type": "mindmap",
+      "ok": true,
+      "output_len": 500,
+      "l0_changed": false,
+      "error": "",
+      "head": "# 一元二次方程 思维导图\\n\\n- 一元二次方程\\n  - 定义与形式\\n    - 标准形式：ax²+bx+c=0（a≠0）\\n    - 核心条件：a≠0，最高次为"
+    },
+    {
+      "material_type": "manim",
+      "ok": true,
+      "output_len": 1997,
+      "l0_changed": false,
+      "error": "",
+      "head": "from manim import *\\n\\nclass QuadraticEquation(Scene):\\n    def construct(self):\\n  "
+    }
+  ]
+}

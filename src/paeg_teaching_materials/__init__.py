@@ -33,6 +33,7 @@ from .protocols import (
 )
 from .quality.checks import check_material_structure, apply_language_l0
 from .quality.judge import judge_material
+from .llm_client import chat, EnvLLM, available
 
 # ⭐ 网状联通（Oracle §3.110）
 from .core import (
@@ -62,6 +63,8 @@ __all__ = [
     "NullLLM", "NullRefiner", "NullResourceProvider",
     # 质量
     "check_material_structure", "apply_language_l0", "judge_material",
+    # LLM 客户端（环境变量独立接入）
+    "chat", "EnvLLM", "available",
     # ⭐ 网状联通（Tool 节点 + Context + 边 + Pipeline + Resolver）
     "Tool", "MaterialContext", "Dependency",
     "broadcast", "directed", "optional",

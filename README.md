@@ -290,14 +290,95 @@ python -m pytest tests/ -q
 
 MIT © 2026 PAEG Team
 
-## 参考文献
+## 能力提升路线（依据 2026-08 市面 agent/AI 项目调研）
 
-本项目的能力设计参考了以下资源：
+调研了市面 PPT / 讲义 / 教学视频 / Manim 动画制作 agent 与开源项目后，按收益排序的能力补齐清单：
+
+| 优先级 | 能力 | 参考实现 |
+|---|---|---|
+| 1 | Markdown/大纲 → PPTX 渲染落盘 | python-pptx 引擎 |
+| 2 | 模板/主题系统（逐页编辑 + 可编辑导出） | presentation-ai / Slidev / LRriver-AIPPT |
+| 3 | 单源多出导出（PPTX/PDF/DOCX/HTML） | pandoc |
+| 4 | 讲稿 → TTS 旁白合成（默认 edge-tts，可克隆 F5-TTS/fish-speech） | edge-tts / F5-TTS / fish-speech |
+| 5 | ASR 字幕 + 讲稿↔画面时间轴对齐 | whisper |
+| 6 | 分镜脚本 → 视频合成（片段+旁白+字幕拼接） | moviepy / MoneyPrinterTurbo |
+| 7 | Manim 代码语法/静态校验器（渲染前拦截崩溃） | Poietra/qual |
+| 8 | Manim 渲染失败自动修复循环（writer+reviewer 双角色） | makefinks/manim-generator |
+| 9 | 逐场景分镜（动画组织成可翻页段落） | manim-slides |
+| 10 | grounded 生成 + 素材引用（避免幻觉） | course-builder / learnflow-ai |
+| 11 | 交互式 HTML 讲义 / 课程站点 | reveal.js / chiron / mkdocs-material |
+| 12 | 质量评测回归基准 | ManiBench 缺陷分类 + LLM-as-judge |
+
+## 参考文献（GitHub 库调研合集）
+
+### A. PPT / 演示文稿制作
+
+| 仓库 | URL | 借鉴点 |
+|---|---|---|
+| scanny/python-pptx | https://github.com/scanny/python-pptx | PPT 真正落盘的最底层引擎 |
+| slidevjs/slidev | https://github.com/slidevjs/slidev | Markdown→演示，内容样式分离 |
+| marp-team/marp-cli | https://github.com/marp-team/marp-cli | Markdown 批渲染 HTML/PDF/PPTX |
+| hakimel/reveal.js | https://github.com/hakimel/reveal.js | HTML 交互式放映 |
+| LRriver/AIPPT | https://github.com/LRriver/AIPPT | AI PPT 工作台，逐页编辑 + 可编辑 PPTX 导出 |
+| chenxingqiang/ppt-agents | https://github.com/chenxingqiang/ppt-agents | agent 从 Markdown 生成 PowerPoint |
+| allweonedev/presentation-ai | https://github.com/allweonedev/presentation-ai | Gamma 替代，主题/模板系统 |
+| jgm/pandoc | https://github.com/jgm/pandoc | 单源多出（pptx/docx/pdf/beamer） |
+
+### B. 讲义 / 教学文档制作
+
+| 仓库 | URL | 借鉴点 |
+|---|---|---|
+| klausners/course-builder | https://github.com/klausners/course-builder | 研究驱动课程生成，grounded 避免幻觉 |
+| raphaelmansuy/course_generator | https://github.com/raphaelmansuy/course_generator | 多步骤 LLM 课程流水线 |
+| gyasis/chiron | https://github.com/gyasis/chiron | 输出自包含交互式 HTML 讲义 |
+| Bbar0n234/learnflow-ai | https://github.com/Bbar0n234/learnflow-ai | 一套素材 fan-out 成讲义/笔记/课件/幻灯片 |
+| docxology/curriculum | https://github.com/docxology/curriculum | 教学大纲生成 + agent 约定 |
+| squidfunk/mkdocs-material | https://github.com/squidfunk/mkdocs-material | Markdown→课程站点 |
+| X-Lab-Group/teachers-karatuai | https://github.com/X-Lab-Group/teachers-karatuai | 教师备课工具 |
+| maccman/101-school | https://github.com/maccman/101-school | 自动课程目录 + 学习路径 |
+
+### C. 教学视频制作
+
+| 仓库 | URL | 借鉴点 |
+|---|---|---|
+| remotion-dev/remotion | https://github.com/remotion-dev/remotion | React 可编程时间轴→视频 |
+| Zulko/moviepy | https://github.com/Zulko/moviepy | 片段+旁白+字幕拼接成片 |
+| openai/whisper | https://github.com/openai/whisper | 字幕/ASR + 时间轴对齐 |
+| coqui-ai/TTS | https://github.com/coqui-ai/TTS | 本地旁白合成 + 音色微调 |
+| rany2/edge-tts | https://github.com/rany2/edge-tts | 零成本中文旁白（默认方案） |
+| SWivid/F5-TTS | https://github.com/SWivid/F5-TTS | 零样本音色克隆 |
+| fishaudio/fish-speech | https://github.com/fishaudio/fish-speech | SOTA 中文 TTS/克隆 |
+| OpenTalker/SadTalker | https://github.com/OpenTalker/SadTalker | 音频驱动数字人 |
+| TMElyralab/MuseTalk | https://github.com/TMElyralab/MuseTalk | 实时口型同步 |
+| harry0703/MoneyPrinterTurbo | https://github.com/harry0703/MoneyPrinterTurbo | 主题→脚本→素材→配音→字幕→成片全自动 |
+| linyqh/NarratoAI | https://github.com/linyqh/NarratoAI | 影视解说自动化 |
+| RayVentura/ShortGPT | https://github.com/RayVentura/ShortGPT | 短视频自动化框架 |
+
+### D. Manim 数学动画
+
+| 仓库 | URL | 借鉴点 |
+|---|---|---|
+| ManimCommunity/manim | https://github.com/ManimCommunity/manim | 数学动画渲染引擎 |
+| 3b1b/manim | https://github.com/3b1b/manim | 3Blue1Brown 定制版 manim |
+| jeertmans/manim-slides | https://github.com/jeertmans/manim-slides | 动画组织成可翻页教学视频段落 |
+| ManimCommunity/manim-voiceover | https://github.com/ManimCommunity/manim-voiceover | 动画 + TTS 音频同步 |
+| makefinks/manim-generator | https://github.com/makefinks/manim-generator | 代码编写者+评审者+执行日志反馈自动修复闭环（最关键） |
+| Poietra/qual | https://github.com/Poietra/qual | Manim 场景静态分析器，渲染前拦截语法/正确性问题 |
+| gqy20/manim-agent | https://github.com/gqy20/manim-agent | LLM Manim 代码生成 agent |
+| paulnegz/manim-mcp | https://github.com/paulnegz/manim-mcp | Manim MCP 工具化封装 |
+| ken2190/stemviz | https://github.com/ken2190/stemviz | STEM 可视化生成 |
+| Alonpenker/math-animate | https://github.com/Alonpenker/math-animate | 数学动画生成器 |
+| gqy20/vid-agent | https://github.com/gqy20/vid-agent | 视频生成 agent |
+| Bugsbunnydev2000/Math-Animation-Generator | https://github.com/Bugsbunnydev2000/Math-Animation-Generator | 数学动画生成器 |
+| 3b1b/videos | https://github.com/3b1b/videos | 3Blue1Brown 视频生成脚本（风格语料） |
+| Ding-weiyi/3b_1b_videos | https://github.com/Ding-weiyi/3b_1b_videos | 3b1b 风格复刻 |
+
+### E. 基础标准 / 协议
 
 | 参考 | 网址 | 参考内容 |
 |---|---|---|
-| **Manim Community** | https://github.com/ManimCommunity/manim | 数学动画渲染引擎 |
-| **3Blue1Brown** | https://github.com/3b1b | 数学动画视觉风格（MVQS 评估基准） |
-| **Anthropic Skills 规范** | https://github.com/anthropics/skills | Agent Skills 标准格式（SKILL.md） |
-| **MCP（Model Context Protocol）** | https://modelcontextprotocol.io | MCP server 标准化接入 |
-| **PAEG 主项目** | https://github.com/Golden2002/PAEG | 教学物料制作体系（§3.91 网状联通架构来源） |
+| Anthropic Skills 规范 | https://github.com/anthropics/skills | Agent Skills 标准格式（SKILL.md） |
+| MCP（Model Context Protocol） | https://modelcontextprotocol.io | MCP server 标准化接入 |
+| PAEG 主项目 | https://github.com/Golden2002/PAEG | 教学物料制作体系（网状联通架构来源） |
+
+> 说明：ManiBench（数学动画评测基准）为 HuggingFace 数据集 + arXiv 论文（https://arxiv.org/abs/2404.12175），无独立 GitHub 仓库，故未列入上表。

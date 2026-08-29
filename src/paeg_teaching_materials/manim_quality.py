@@ -14,7 +14,93 @@
 from __future__ import annotations
 
 import ast
+import re
 from typing import List, Tuple
+
+
+# ─────────────────────────────────────
+# 0. clean_manim_code（§3.111 ⭐ 渲染前清洗——修复 LLM 输出代码块外壳/说明文字）
+# ─────────────────────────────────────
+_F2H = {"，": ",", "；": ";", "：": ":", "（": "(", "）": ")",
+        "！": "!", "？": "?", "“": '"', "”": '"', "‘": "'", "’": "'",
+        "。": ".", "、": ",", "…": "...", "·": ".", "—": "-", "―": "-",
+        "｛": "{", "｝": "}", "【": "[", "】": "]", "《": "<", "》": ">"}
+
+
+def _fullwidth_to_halfwidth_aware(code: str) -> str:
+    """全角标点 → 半角（仅字符串字面量之外，避免改动 Text('中文，标点') 内容）。"""
+    out: List[str] = []
+    i, n = 0, len(code)
+    state = None  # None | "'" | '"' | "'''" | '"""'
+    while i < n:
+        ch = code[i]
+        if code.startswith(('"""', "'''"), i):
+            tq = code[i:i + 3]
+            if state is None:
+                state = tq
+                out.append(tq)
+                i += 3
+                continue
+            if state == tq:
+                state = None
+                out.append(tq)
+                i += 3
+                continue
+        if state is None:
+            if ch in ('"', "'"):
+                state = ch
+                out.append(ch)
+            else:
+                out.append(_F2H.get(ch, ch))
+        else:
+            if ch == "\\":
+                out.append(ch)
+                if i + 1 < n:
+                    out.append(code[i + 1])
+                    i += 1
+            elif ch == state:
+                state = None
+                out.append(ch)
+            else:
+                out.append(ch)
+        i += 1
+    return "".join(out)
+
+
+def clean_manim_code(code: str) -> str:
+    """清洗 LLM 输出的 Manim 代码（幂等——干净代码原样返回）。
+
+    修复：LLM 常在代码外包 ```python ... ``` 代码块、加首部说明文字、
+    混入中文全角标点（导致 SyntaxError）、残留 LaTeX $——这些都让后续
+    lint_manim_code / mvqs_score / 渲染在 ast.parse 阶段直接失败。
+
+    处理顺序：
+    1. 剥离 ```python ... ``` 代码块外壳
+    2. 剥离首部说明文字（定位 class / from manim / import 起点）
+    3. 全角标点 → 半角（仅字符串字面量之外）
+    4. 剥离 LaTeX $ 残留
+    """
+    if not code:
+        return code
+    code = str(code).strip()
+    # 1) 代码块外壳
+    m = re.search(r"```(?:python)?\s*\n(.*?)```", code, re.S)
+    if m:
+        code = m.group(1)
+    # 2) 首部说明文字
+    lines = code.split("\n")
+    start = 0
+    for i, ln in enumerate(lines):
+        if ("class " in ln or "from manim" in ln
+                or ln.strip().startswith("import ")):
+            start = i
+            break
+    code = "\n".join(lines[start:])
+    # 3) 全角 → 半角（字符串字面量之外）
+    code = _fullwidth_to_halfwidth_aware(code)
+    # 4) LaTeX $ 残留
+    code = code.replace("$", "")
+    return code.strip()
 
 
 # ─────────────────────────────────────

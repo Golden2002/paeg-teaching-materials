@@ -32,14 +32,21 @@ class PptGenerator(Generator):
                           "语言规范（词法完整/句法完整）。输出 markdown 大纲，用 ## 分页。")
                 user = f"主题：{topic}（{subject}）。"
                 outline = llm(system, user, max_tokens=1500)
-                # 可选渲染 pptx
+                if not outline:  # 无 key 降级弱模式
+                    return {
+                        "material_type": "ppt", "topic": topic, "subject": subject,
+                        "ok": False,
+                        "output": f"# {topic} PPT 大纲（弱模式占位）\n\n## 封面\n{topic}\n## 内容\n（待生成）",
+                    }
+                # 可选渲染 pptx（真实落盘）
                 path = None
                 if kw.get("render", False):
                     try:
                         from ..adapters.pptx_renderer import render_outline_to_pptx
-                        path = render_outline_to_pptx(outline, topic)
+                        path = render_outline_to_pptx(outline, topic,
+                                                      out_dir=kw.get("out_dir"))
                     except Exception as e:
-                        path = f"（渲染失败: {str(e)[:100]}）"
+                        path = f"（渲染失败: {str(e)[:120]}）"
                 return {
                     "material_type": "ppt", "topic": topic, "subject": subject,
                     "ok": True, "output": outline,
@@ -71,9 +78,25 @@ class ScriptGenerator(Generator):
                           "输出 markdown，用 ## 分节。")
                 user = f"主题：{topic}（{subject}）。"
                 script = llm(system, user, max_tokens=2000)
+                if not script:  # 无 key 降级弱模式
+                    return {
+                        "material_type": "script", "topic": topic, "subject": subject,
+                        "ok": False,
+                        "output": f"# {topic} 讲稿（弱模式占位）\n\n## 开场\n（待生成）\n## 主体\n（待生成）\n## 小结\n（待生成）",
+                    }
+                # 可选渲染落盘：TTS 旁白合成 mp3
+                audio_path = None
+                if kw.get("render", False):
+                    try:
+                        from ..adapters.tts_synth import synthesize_script_audio
+                        audio_path = synthesize_script_audio(
+                            script, topic=topic, out_dir=kw.get("out_dir"))
+                    except Exception as e:
+                        audio_path = f"（TTS 渲染失败: {str(e)[:120]}）"
                 return {
                     "material_type": "script", "topic": topic, "subject": subject,
                     "ok": True, "output": script,
+                    "audio_path": audio_path,
                 }
             return {
                 "material_type": "script", "topic": topic, "subject": subject,
@@ -100,6 +123,12 @@ class MindmapGenerator(Generator):
                           "层级清晰、关键词简洁。输出 markdown 缩进列表。")
                 user = f"主题：{topic}（{subject}）。"
                 mindmap = llm(system, user, max_tokens=1000)
+                if not mindmap:  # 无 key 降级弱模式
+                    return {
+                        "material_type": "mindmap", "topic": topic, "subject": subject,
+                        "ok": False,
+                        "output": f"# {topic} 思维导图（弱模式占位）\n- 中心主题\n  - （待生成）",
+                    }
                 return {
                     "material_type": "mindmap", "topic": topic, "subject": subject,
                     "ok": True, "output": mindmap,
@@ -130,6 +159,12 @@ class VideoGenerator(Generator):
                           "输出 JSON 数组 [{'scene': n, 'duration': s, 'visual': ..., 'narration': ...}]")
                 user = f"主题：{topic}（{subject}）。"
                 script = llm(system, user, max_tokens=2000)
+                if not script:  # 无 key 降级弱模式
+                    return {
+                        "material_type": "video", "topic": topic, "subject": subject,
+                        "ok": False,
+                        "output": f"# {topic} 分镜脚本（弱模式占位）\n\n[{{'scene': 1, 'duration': 10, 'visual': '（待生成）', 'narration': '（待生成）'}}]",
+                    }
                 return {
                     "material_type": "video", "topic": topic, "subject": subject,
                     "ok": True, "output": script,
@@ -174,6 +209,20 @@ class ManimGenerator(Generator):
                           + "只输出 Python 代码。")
                 user = f"主题：{topic}（{subject}）。"
                 code = llm(system, user, max_tokens=2000)
+                if not code:  # 无 key 降级弱模式
+                    return {
+                        "material_type": "manim", "topic": topic, "subject": subject,
+                        "ok": False,
+                        "output": f"# {topic} Manim 动画（弱模式占位）\n# 需注入 LLM 后生成代码",
+                    }
+
+                # §3.111 ⭐ 清洗 LLM 输出（剥离代码块外壳/说明/全角标点/$ 残留——
+                # 否则 lint/mvqs/渲染在 ast.parse 阶段直接失败）
+                try:
+                    from ..manim_quality import clean_manim_code as _clean
+                    code = _clean(code)
+                except Exception:
+                    _clean = None
 
                 # §3.111 ⭐ safety lint（12 崩溃模式）
                 try:
@@ -194,27 +243,43 @@ class ManimGenerator(Generator):
                 render_info = {}
                 if kw.get("render", False):
                     try:
-                        from ..adapters.manim_runtime import render_manim_code
-                        for _r in range(3):
+                        from ..adapters.manim_runtime import (
+                            render_manim_code, manim_available, save_manim_code)
+                        _out_dir = kw.get("out_dir")
+                        if not manim_available():
+                            # 依赖缺失优雅降级：仍落盘 .py 代码
                             try:
-                                mp4 = render_manim_code(code, topic)
-                                render_ok = True
-                                render_info = {"mp4_path": mp4}
-                                break
-                            except Exception as _re:
-                                # RITL-DOC：错误 + API 签名注入 → LLM 修复 → 重试
+                                render_info["code_path"] = save_manim_code(
+                                    code, topic, out_dir=_out_dir)
+                            except Exception:
+                                pass
+                            render_info["render_skip"] = (
+                                "Manim 渲染环境不可用（未安装 manim/ffmpeg；已保存 .py 代码）")
+                        else:
+                            for _r in range(3):
                                 try:
-                                    from ..manim_quality import build_ritl_doc_block
-                                    _fix_sys = "你是 Manim 代码修复器。根据渲染错误修复代码。输出完整代码。"
-                                    _fix_usr = build_ritl_doc_block(code, str(_re)[:500])
-                                    _fixed = llm(_fix_sys, _fix_usr, max_tokens=2000)
-                                    if _fixed and "class " in _fixed:
-                                        code = _fixed
-                                        continue
-                                except Exception:
-                                    pass
-                                render_info["render_error"] = str(_re)[:200]
-                                break
+                                    mp4 = render_manim_code(code, topic, out_dir=_out_dir)
+                                    render_ok = True
+                                    render_info = {"mp4_path": mp4}
+                                    break
+                                except Exception as _re:
+                                    _err = str(_re)
+                                    if _err.startswith("MANIM_UNAVAILABLE:"):
+                                        render_info["render_skip"] = _err[18:].strip()
+                                        break
+                                    # RITL-DOC：错误 + API 签名注入 → LLM 修复 → 重试
+                                    try:
+                                        from ..manim_quality import build_ritl_doc_block
+                                        _fix_sys = "你是 Manim 代码修复器。根据渲染错误修复代码。输出完整代码。"
+                                        _fix_usr = build_ritl_doc_block(code, _err[:500])
+                                        _fixed = llm(_fix_sys, _fix_usr, max_tokens=2000)
+                                        if _fixed and "class " in _fixed:
+                                            code = _clean(_fixed) if _clean else _fixed
+                                            continue
+                                    except Exception:
+                                        pass
+                                    render_info["render_error"] = _err[:200]
+                                    break
                     except Exception as e:
                         render_info["render_skip"] = f"渲染环境不可用: {str(e)[:100]}"
 

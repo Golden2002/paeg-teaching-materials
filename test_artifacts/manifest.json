@@ -1,0 +1,74 @@
+[
+  {
+    "kind": "handout",
+    "file": "讲义_一元二次方程.md",
+    "bytes": 6457,
+    "quality_issues": []
+  },
+  {
+    "kind": "ppt",
+    "file": "PPT大纲_一元二次方程.md",
+    "bytes": 1445,
+    "quality_issues": []
+  },
+  {
+    "kind": "script",
+    "file": "讲稿_细胞呼吸.md",
+    "bytes": 8420,
+    "quality_issues": [
+      "讲稿缺『结束』部分"
+    ]
+  },
+  {
+    "kind": "mindmap",
+    "file": "思维导图_细胞呼吸.md",
+    "bytes": 1178,
+    "quality_issues": []
+  },
+  {
+    "kind": "video",
+    "file": "视频分镜_一元二次方程.json",
+    "bytes": 2919,
+    "quality_issues": []
+  },
+  {
+    "kind": "video",
+    "file": "视频分镜_细胞呼吸.json",
+    "bytes": 4062,
+    "quality_issues": []
+  },
+  {
+    "kind": "manim",
+    "file": "Manim_一元二次方程.py",
+    "bytes": 3072,
+    "quality_issues": []
+  },
+  {
+    "kind": "manim",
+    "file": "Manim_细胞呼吸.py",
+    "bytes": 6535,
+    "quality_issues": []
+  },
+  {
+    "kind": "render",
+    "file": "一元二次方程.pptx",
+    "bytes": 41831
+  },
+  {
+    "kind": "render",
+    "file": "旁白_细胞呼吸.mp3",
+    "bytes": 1844064
+  },
+  {
+    "kind": "render",
+    "file": "一元二次方程_数学动画.mp4",
+    "bytes": 451509,
+    "note": "ManimCE v0.19.0 真实渲染，h264 1280x720@30fps，时长 20.67s"
+  },
+  {
+    "kind": "render",
+    "file": "细胞呼吸_教学动画.mp4",
+    "bytes": 2091208,
+    "note": "ManimCE v0.19.0 真实渲染，h264 1920x1080@60fps，时长 43.50s（Round 8 第二主题闭环）"
+  }
+]

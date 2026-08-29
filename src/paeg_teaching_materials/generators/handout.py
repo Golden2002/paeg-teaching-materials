@@ -38,10 +38,11 @@ class HandoutGenerator(Generator):
             system = _HANDOUT_SYSTEM.format(learner=kw.get("learner", "学生"), subject=subject)
             if hasattr(llm, "__call__") and type(llm).__name__ != "NullLLM":
                 output = llm(system, user, max_tokens=2000)
-                return {
-                    "material_type": "handout", "topic": topic, "subject": subject,
-                    "ok": True, "output": output,
-                }
+                if output:  # 无 key 时 EnvLLM 返回空串——降级弱模式而非空成功
+                    return {
+                        "material_type": "handout", "topic": topic, "subject": subject,
+                        "ok": True, "output": output,
+                    }
             # 弱实现：结构化占位
             output = "\n".join(f"## {sec}\n\n（{sec}内容待生成——未注入 LLM 实现）"
                                for sec in HANDOUT_SECTIONS)

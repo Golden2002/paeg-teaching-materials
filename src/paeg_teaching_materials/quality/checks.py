@@ -52,11 +52,17 @@ def check_material_structure(text: str, material_type: str = "handout") -> List[
 
 
 def apply_language_l0(text: str) -> str:
-    """语言规范 L0 规则兜底（病句修正——复用 paeg_lang_style 若已安装）。"""
+    """语言规范 L0 规则兜底（病句修正——复用 paeg_lang_style 若已安装）。
+
+    §3.116 ⭐ 采用 gate_short（L0 快路径，内置 fix_known_gaffes）为主，
+    再跑一次 fix_known_gaffes 兜底收口（对齐 14.1 gate_content 的"最终收口"策略）。
+    paeg_lang_style 缺失时优雅降级为原文——不抛异常、不阻塞生成链路。
+    """
     if not text:
         return text
     try:
-        from paeg_lang_style import fix_known_gaffes
-        return fix_known_gaffes(text)
+        from paeg_lang_style import gate_short, fix_known_gaffes
+        out = gate_short(text)
+        return fix_known_gaffes(out if isinstance(out, str) else text)
     except Exception:
         return text
