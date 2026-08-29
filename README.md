@@ -35,7 +35,7 @@
 - **可扩充生成器注册表**：`MaterialRegistry.register("自定义类型", generator)` 即扩展
 - **零宿主依赖**：6 个 Protocol 抽象（LLMCallable/RefinerProtocol/HandoutGenerator/ScriptGenerator/MindmapGenerator/ResourceProvider）+ Null 弱模式
 - **统一执行入口**：`execute(name, args)` 对标 constraint_engine（JSON 契约，绝不抛异常）
-- **MCP server 直接安装**：`pip install` + MCP 配置声明即接入（15 工具）
+- **MCP server 直接安装**：`pip install` + MCP 配置声明即接入（**20 工具 + 2 resources + 2 prompts** 三原语齐全）
 - **语言规范联动**：物料产出自动过 L0 病句修正（复用 paeg-lang-style）
 - **质量检查 + 评审**：确定性结构检查 + LLM 5 维评分
 

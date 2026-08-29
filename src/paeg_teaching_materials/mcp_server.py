@@ -286,6 +286,44 @@ def build_server() -> "FastMCP":
         except Exception as e:
             return json.dumps({"ok": False, "error": str(e)[:300]}, ensure_ascii=False)
 
+    # ─────────────────────────────────────
+    # §3.116 ⭐ MCP 三原语补全：resources + prompts（给第三方完整接入）
+    # ─────────────────────────────────────
+    @mcp.resource("material-types://list")
+    def material_types_resource() -> str:
+        """物料类型清单（read-only 资源）：已注册物料类型与生成器。"""
+        return execute("list_material_types", {})
+
+    @mcp.resource("material-dependencies://graph")
+    def material_dependencies_resource() -> str:
+        """网状依赖图（read-only 资源）：功能节点的前置依赖关系。"""
+        return execute("list_dependencies", {})
+
+    @mcp.prompt()
+    def material_build_workflow(topic: str) -> str:
+        """物料制作工作流模板（6 类物料 → 网状编排）。"""
+        return (
+            f"请按教学物料制作流程为「{topic}」产出物料：\n"
+            "1. 查资料（research，广播前置）：检索主题相关资料\n"
+            "2. 大纲（outline）：结构化内容骨架\n"
+            "3. 分物料生成：讲义 / 讲稿 / 思维导图 / PPT / 视频 / Manim 动画\n"
+            "4. 质量检查：material_quality_check（结构）+ material_judge（5 维评审）\n"
+            "5. 语言规范：normalize_material（L0 病句修正）\n"
+            "可调用 execute_pipeline 自动编排（如 execute_pipeline('ppt') 自动查资料→大纲→PPT）。"
+        )
+
+    @mcp.prompt()
+    def manim_production(topic: str) -> str:
+        """Manim 数学动画制作流程模板（R8 顶尖化）。"""
+        return (
+            f"请按 Manim 动画制作管线为「{topic}」产出：\n"
+            "1. plan_scenes：分镜规划（3B1B 原则 + 叙事结构）\n"
+            "2. generate_manim：生成 Manim 代码（safe 12 崩溃模式防护）\n"
+            "3. audit_visual：视觉审计（MVQS 几何评估 + safety lint）\n"
+            "4. render_manim：渲染 mp4（质量审计）\n"
+            "5. tts_narrate + mux_video_assets：旁白合成 + 音画 mux\n"
+        )
+
     return mcp
 
 
